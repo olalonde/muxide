@@ -15,6 +15,13 @@ function saveIdeFile  {
   echo "export WINDOW_ID=$WINDOW_ID" >> $IDE_FILE
 }
 
+ACTION=$1
+
+if [ -d $1 ]; then
+  cd $1
+  ACTION=$2
+fi
+
 tmux start-server
 
 # Try to load previously launched ide
@@ -22,7 +29,17 @@ mkdir -p /tmp/ide/$USER
 IDE_FILE=/tmp/ide/$USER/$(md5 <<< $(pwd))
 if [ -f $IDE_FILE ]; then
   source $IDE_FILE
-  gotoWindow && exit
+  if [ "$ACTION" == "stop" ]; then
+    tmux kill-window -t $SESSION_NAME:$WINDOW_ID 2> /dev/null && exit || \
+      echo "Project not started." && exit -1
+  else
+    gotoWindow && exit
+  fi
+else
+  if [ "$ACTION" == "stop" ]; then
+    echo "Project not started."
+    exit -1
+  fi
 fi
 
 # Not in tmux
@@ -46,13 +63,13 @@ fi
 PROJECT_NAME=$(basename $(pwd))
 tmux rename-window -t $SESSION_NAME:$WINDOW_ID $PROJECT_NAME
 
-# Run pre command.
+# Run pre command
 if [ -f docker-compose.yml ]; then
   boot2docker up && $(boot2docker shellinit) > /dev/null
 fi
 
 if [ -f Procfile ]; then
-  CMD="foreman start"
+  CMD="foreman\ start"
 fi
 
 #tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.0 '' C-m

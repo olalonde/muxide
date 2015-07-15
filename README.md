@@ -19,6 +19,13 @@ command:
 ```bash
 cd someproject;
 muxide
+# or
+muxide ./path/to/project
+
+# to stop
+muxide stop
+# or
+muxide ./path/to/project stop
 ```
 
 # TODO
