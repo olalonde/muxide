@@ -35,3 +35,6 @@ muxide ./path/to/project stop
 `.muxide` config file to customize projects and
 detect when there is a project up the path so we don't start
 the ide in subdirectories.
+
+Safely `muxide stop`:
+https://github.com/jlipps/tmux-safekill/blob/master/scripts/safekill.sh

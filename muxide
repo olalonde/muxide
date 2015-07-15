@@ -3,16 +3,16 @@
 
 function gotoWindow  {
   if [ -z "$TMUX" ]; then
-    tmux -u attach-session -t $SESSION_NAME:$WINDOW_ID 2> /dev/null
+    tmux -u attach-session -t $SESSION_ID:$WINDOW_ID 2> /dev/null
   else
-    tmux -u switch-client -t $SESSION_NAME:$WINDOW_ID 2> /dev/null
+    tmux -u switch-client -t $SESSION_ID:$WINDOW_ID 2> /dev/null
   fi
 }
 
 function saveIdeFile  {
   echo -n "" > $IDE_FILE
-  echo "export SESSION_NAME=$SESSION_NAME" >> $IDE_FILE
-  echo "export WINDOW_ID=$WINDOW_ID" >> $IDE_FILE
+  echo "export SESSION_ID='$SESSION_ID'" >> $IDE_FILE
+  echo "export WINDOW_ID='$WINDOW_ID'" >> $IDE_FILE
 }
 
 ACTION=$1
@@ -30,7 +30,7 @@ IDE_FILE=/tmp/muxide/$USER/$(md5 <<< $(pwd))
 if [ -f $IDE_FILE ]; then
   source $IDE_FILE
   if [ "$ACTION" == "stop" ]; then
-    tmux kill-window -t $SESSION_NAME:$WINDOW_ID 2> /dev/null && exit || \
+    tmux kill-window -t $SESSION_ID:$WINDOW_ID 2> /dev/null && exit || \
       echo "Project not started." && exit -1
   else
     gotoWindow && exit
@@ -44,26 +44,25 @@ fi
 
 # Not in tmux
 if [ -z "$TMUX" ]; then
-  SESSION_NAME="auto"
-  TMUX= tmux new-session -d -s $SESSION_NAME
-  WINDOW_ID=$(tmux display-message -t $SESSION_NAME:0 -p '#{window_id}')
+  SESSION_ID=$(tmux new-session -d -P -F '#{session_id}')
+  WINDOW_ID=$(tmux display-message -t $SESSION_ID:0 -p '#{window_id}')
 else
-  SESSION_NAME=$(tmux display-message -p '#S')
+  SESSION_ID=$(tmux display-message -p '#{session_id}')
   PANES_IN_CURRENT_WINDOW=$(tmux list-panes | wc -l | awk '{print $1}')
   # use current window
   if [ $PANES_IN_CURRENT_WINDOW -eq 1 ]; then
     WINDOW_ID=$(tmux display-message -p '#{window_id}')
   else
   # create new window
-    WINDOW_ID=$(tmux new-window -t $SESSION_NAME -P -F '#{window_id}')
+    WINDOW_ID=$(tmux new-window -t $SESSION_ID -P -F '#{window_id}')
   fi
 fi
 
 saveIdeFile
 
-#echo $SESSION_NAME
+#echo $SESSION_ID
 PROJECT_NAME=$(basename $(pwd))
-tmux rename-window -t $SESSION_NAME:$WINDOW_ID $PROJECT_NAME
+tmux rename-window -t $SESSION_ID:$WINDOW_ID $PROJECT_NAME
 
 # Run pre command
 if [ -f docker-compose.yml ]; then
@@ -71,28 +70,28 @@ if [ -f docker-compose.yml ]; then
 fi
 
 if [ -f Procfile ]; then
-  CMD="foreman\ start"
+  CMD='foreman start'
 fi
 
-#tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.0 '' C-m
-tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.0 vim\ -c\ \"NERDTreeToggle\" C-m
+#tmux send-keys -t $SESSION_ID:$WINDOW_NAME.0 '' C-m
+tmux send-keys -t $SESSION_ID:$WINDOW_NAME.0 vim\ -c\ \"NERDTreeToggle\" C-m
 
-tmux splitw -t $SESSION_NAME:$WINDOW_NAME
-tmux select-layout -t $SESSION_NAME:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+tmux splitw -t $SESSION_ID:$WINDOW_NAME
+tmux select-layout -t $SESSION_ID:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
 
-#tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.1 '' C-m
+#tmux send-keys -t $SESSION_ID:$WINDOW_NAME.1 '' C-m
 
-tmux splitw -t $SESSION_NAME:$WINDOW_NAME
-tmux select-layout -t $SESSION_NAME:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+tmux splitw -t $SESSION_ID:$WINDOW_NAME
+tmux select-layout -t $SESSION_ID:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
 
-#tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.2 '' C-m
-tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.2 $CMD
+#tmux send-keys -t $SESSION_ID:$WINDOW_NAME.2 '' C-m
+tmux send-keys -t $SESSION_ID:$WINDOW_NAME.2 "$CMD" C-m
 
-tmux select-layout -t $SESSION_NAME:0 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+tmux select-layout -t $SESSION_ID:0 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
 
-tmux select-pane -t $SESSION_NAME:$WINDOW_NAME.0
+tmux select-pane -t $SESSION_ID:$WINDOW_NAME.0
 
-tmux select-window -t $SESSION_NAME:$WINDOW_NAME
+tmux select-window -t $SESSION_ID:$WINDOW_NAME
 
 gotoWindow
 
