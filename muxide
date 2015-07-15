@@ -17,7 +17,7 @@ function saveIdeFile  {
 
 ACTION=$1
 
-if [ -d $1 ]; then
+if [ -d "$1" ]; then
   cd $1
   ACTION=$2
 fi
@@ -25,8 +25,8 @@ fi
 tmux start-server
 
 # Try to load previously launched ide
-mkdir -p /tmp/ide/$USER
-IDE_FILE=/tmp/ide/$USER/$(md5 <<< $(pwd))
+mkdir -p /tmp/muxide/$USER
+IDE_FILE=/tmp/muxide/$USER/$(md5 <<< $(pwd))
 if [ -f $IDE_FILE ]; then
   source $IDE_FILE
   if [ "$ACTION" == "stop" ]; then
@@ -58,6 +58,8 @@ else
     WINDOW_ID=$(tmux new-window -t $SESSION_NAME -P -F '#{window_id}')
   fi
 fi
+
+saveIdeFile
 
 #echo $SESSION_NAME
 PROJECT_NAME=$(basename $(pwd))
@@ -93,5 +95,4 @@ tmux select-pane -t $SESSION_NAME:$WINDOW_NAME.0
 tmux select-window -t $SESSION_NAME:$WINDOW_NAME
 
 gotoWindow
-saveIdeFile
 
