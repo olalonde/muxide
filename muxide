@@ -1,0 +1,80 @@
+#!/bin/bash
+#set -x
+
+function gotoWindow  {
+  if [ -z "$TMUX" ]; then
+    tmux -u attach-session -t $SESSION_NAME:$WINDOW_ID 2> /dev/null
+  else
+    tmux -u switch-client -t $SESSION_NAME:$WINDOW_ID 2> /dev/null
+  fi
+}
+
+function saveIdeFile  {
+  echo -n "" > $IDE_FILE
+  echo "export SESSION_NAME=$SESSION_NAME" >> $IDE_FILE
+  echo "export WINDOW_ID=$WINDOW_ID" >> $IDE_FILE
+}
+
+tmux start-server
+
+# Try to load previously launched ide
+mkdir -p /tmp/ide/$USER
+IDE_FILE=/tmp/ide/$USER/$(md5 <<< $(pwd))
+if [ -f $IDE_FILE ]; then
+  source $IDE_FILE
+  gotoWindow && exit
+fi
+
+# Not in tmux
+if [ -z "$TMUX" ]; then
+  SESSION_NAME="auto"
+  TMUX= tmux new-session -d -s $SESSION_NAME
+  WINDOW_ID=$(tmux display-message -t $SESSION_NAME:0 -p '#{window_id}')
+else
+  SESSION_NAME=$(tmux display-message -p '#S')
+  PANES_IN_CURRENT_WINDOW=$(tmux list-panes | wc -l | awk '{print $1}')
+  # use current window
+  if [ $PANES_IN_CURRENT_WINDOW -eq 1 ]; then
+    WINDOW_ID=$(tmux display-message -p '#{window_id}')
+  else
+  # create new window
+    WINDOW_ID=$(tmux new-window -t $SESSION_NAME -P -F '#{window_id}')
+  fi
+fi
+
+#echo $SESSION_NAME
+PROJECT_NAME=$(basename $(pwd))
+tmux rename-window -t $SESSION_NAME:$WINDOW_ID $PROJECT_NAME
+
+# Run pre command.
+if [ -f docker-compose.yml ]; then
+  boot2docker up && $(boot2docker shellinit) > /dev/null
+fi
+
+if [ -f Procfile ]; then
+  CMD="foreman start"
+fi
+
+#tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.0 '' C-m
+tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.0 vim\ -c\ \"NERDTreeToggle\" C-m
+
+tmux splitw -t $SESSION_NAME:$WINDOW_NAME
+tmux select-layout -t $SESSION_NAME:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+
+#tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.1 '' C-m
+
+tmux splitw -t $SESSION_NAME:$WINDOW_NAME
+tmux select-layout -t $SESSION_NAME:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+
+#tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.2 '' C-m
+tmux send-keys -t $SESSION_NAME:$WINDOW_NAME.2 $CMD
+
+tmux select-layout -t $SESSION_NAME:0 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+
+tmux select-pane -t $SESSION_NAME:$WINDOW_NAME.0
+
+tmux select-window -t $SESSION_NAME:$WINDOW_NAME
+
+gotoWindow
+saveIdeFile
+
