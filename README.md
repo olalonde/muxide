@@ -3,6 +3,8 @@
 A tiny IDE written in bash, built on tmux + vim and inspired by
 tmuxinator.
 
+![screencast](http://g.recordit.co/m4SDhnmpbi.gif)
+
 Muxide ensures that only one "ide" window is started by unique path.
 
 ## Install
