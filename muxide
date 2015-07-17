@@ -18,8 +18,9 @@ function saveIdeFile  {
 ACTION=$1
 
 if [ -d "$1" ]; then
-  cd $1
+  PROJECT_PATH=$1
   ACTION=$2
+  cd $PROJECT_PATH
 fi
 
 tmux start-server
@@ -30,6 +31,7 @@ IDE_FILE=/tmp/muxide/$USER/$(md5 <<< $(pwd))
 if [ -f $IDE_FILE ]; then
   source $IDE_FILE
   if [ "$ACTION" == "stop" ]; then
+    # TODO: just close current window if window belongs to a muxide project and no path specified?
     tmux kill-window -t $SESSION_ID:$WINDOW_ID 2> /dev/null && exit || \
       echo "Project not started." && exit -1
   else
@@ -51,11 +53,12 @@ else
   PANES_IN_CURRENT_WINDOW=$(tmux list-panes | wc -l | awk '{print $1}')
   # use current window
   if [ $PANES_IN_CURRENT_WINDOW -eq 1 ]; then
-    WINDOW_ID=$(tmux display-message -p '#{window_id}')
-  else
-  # create new window
-    WINDOW_ID=$(tmux new-window -t $SESSION_ID -P -F '#{window_id}')
+    #WINDOW_ID=$(tmux display-message -p '#{window_id}')
+    #tmux send-keys cd\ "$PROJECT_PATH" C-m
+    OLD_WINDOW_ID=$(tmux display-message -p '#{window_id}')
   fi
+  # create new window
+  WINDOW_ID=$(tmux new-window -d -t $SESSION_ID -P -F '#{window_id}')
 fi
 
 saveIdeFile
@@ -73,25 +76,25 @@ if [ -f Procfile ]; then
   CMD='foreman start'
 fi
 
-#tmux send-keys -t $SESSION_ID:$WINDOW_NAME.0 '' C-m
-tmux send-keys -t $SESSION_ID:$WINDOW_NAME.0 vim\ -c\ \"NERDTreeToggle\" C-m
+#tmux send-keys -t $SESSION_ID:$WINDOW_ID.0 '' C-m
+tmux send-keys -t $SESSION_ID:$WINDOW_ID.0 vim\ -c\ \"NERDTreeToggle\" C-m
 
-tmux splitw -t $SESSION_ID:$WINDOW_NAME
-tmux select-layout -t $SESSION_ID:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+tmux splitw -t $SESSION_ID:$WINDOW_ID
+tmux select-layout -t $SESSION_ID:$WINDOW_ID 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} &> /dev/null
 
-#tmux send-keys -t $SESSION_ID:$WINDOW_NAME.1 '' C-m
 
-tmux splitw -t $SESSION_ID:$WINDOW_NAME
-tmux select-layout -t $SESSION_ID:$WINDOW_NAME 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+#tmux send-keys -t $SESSION_ID:$WINDOW_ID.1 '' C-m
 
-#tmux send-keys -t $SESSION_ID:$WINDOW_NAME.2 '' C-m
-tmux send-keys -t $SESSION_ID:$WINDOW_NAME.2 "$CMD" C-m
+tmux splitw -t $SESSION_ID:$WINDOW_ID
+tmux select-layout -t $SESSION_ID:$WINDOW_ID 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} &> /dev/null
 
-tmux select-layout -t $SESSION_ID:0 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} > /dev/null
+#tmux send-keys -t $SESSION_ID:$WINDOW_ID.2 '' C-m
+tmux send-keys -t $SESSION_ID:$WINDOW_ID.2 "$CMD" C-m
 
-tmux select-pane -t $SESSION_ID:$WINDOW_NAME.0
+tmux select-layout -t $SESSION_ID:0 1adc,204x67,0,0\{124x67,0,0,15,79x67,125,0\[79x33,125,0,16,79x33,125,34,17\]\} &> /dev/null
 
-tmux select-window -t $SESSION_ID:$WINDOW_NAME
+tmux select-pane -t $SESSION_ID:$WINDOW_ID.0
+
+tmux select-window -t $SESSION_ID:$WINDOW_ID
 
 gotoWindow
-
