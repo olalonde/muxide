@@ -98,3 +98,8 @@ tmux select-pane -t $SESSION_ID:$WINDOW_ID.0
 tmux select-window -t $SESSION_ID:$WINDOW_ID
 
 gotoWindow
+
+# kill window muxide was starting from if it only has one pane.
+if [ -n "$OLD_WINDOW_ID" ]; then
+  tmux kill-window -t $SESSION_ID:$OLD_WINDOW_ID 2> /dev/null
+fi
